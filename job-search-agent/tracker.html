@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Job Search Tracker</title>
+<style>
+  :root{
+    --bg:#f6f5f2;--surface:#ffffff;--surface-2:#f0eee9;--border:#ded9d0;--text:#211f1c;--text-dim:#6b665d;
+    --accent:#3d5a4c;--accent-weak:#e3ebe6;
+    --mono-fallback:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans-fallback:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --status-new:#3465b0;--status-new-bg:#e5edf9;
+    --status-reviewing:#8a6d1d;--status-reviewing-bg:#f7efd8;
+    --status-applied:#a15a1f;--status-applied-bg:#f8e9d8;
+    --status-interviewing:#1f7a4d;--status-interviewing-bg:#dff2e7;
+    --status-offer:#1f7a4d;--status-offer-bg:#c9ecd9;
+    --status-rejected:#8a3a2f;--status-rejected-bg:#f5e2de;
+    --status-passed:#6b665d;--status-passed-bg:#eae7e1;
+    --shadow:0 1px 2px rgba(30,25,15,0.06),0 1px 1px rgba(30,25,15,0.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17181a;--surface:#1f2123;--surface-2:#26292b;--border:#34373a;--text:#eeece6;--text-dim:#a4a099;
+      --accent:#7fb89c;--accent-weak:#22322b;
+      --status-new:#8fb6e8;--status-new-bg:#1e2c3f;
+      --status-reviewing:#e0c05a;--status-reviewing-bg:#3a3220;
+      --status-applied:#e2a468;--status-applied-bg:#3d2f1f;
+      --status-interviewing:#79d1a5;--status-interviewing-bg:#1c3427;
+      --status-offer:#79d1a5;--status-offer-bg:#1f4230;
+      --status-rejected:#e08b7a;--status-rejected-bg:#3c2622;
+      --status-passed:#a4a099;--status-passed-bg:#2a2c2e;
+      --shadow:0 1px 2px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17181a;--surface:#1f2123;--surface-2:#26292b;--border:#34373a;--text:#eeece6;--text-dim:#a4a099;
+    --accent:#7fb89c;--accent-weak:#22322b;
+    --status-new:#8fb6e8;--status-new-bg:#1e2c3f;
+    --status-reviewing:#e0c05a;--status-reviewing-bg:#3a3220;
+    --status-applied:#e2a468;--status-applied-bg:#3d2f1f;
+    --status-interviewing:#79d1a5;--status-interviewing-bg:#1c3427;
+    --status-offer:#79d1a5;--status-offer-bg:#1f4230;
+    --status-rejected:#e08b7a;--status-rejected-bg:#3c2622;
+    --status-passed:#a4a099;--status-passed-bg:#2a2c2e;
+    --shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans-fallback);font-size:14px;line-height:1.5;padding:24px 16px 64px;}
+  .wrap{max-width:1040px;margin:0 auto;}
+  header{margin-bottom:16px;}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .sub{color:var(--text-dim);font-size:13px;max-width:640px;}
+  .demo-banner{display:inline-block;margin-top:10px;font-size:11.5px;font-weight:600;color:var(--status-reviewing);background:var(--status-reviewing-bg);border-radius:999px;padding:3px 10px;}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:18px 0 0;}
+  .tab{border:none;background:transparent;color:var(--text-dim);font-family:inherit;font-size:14px;font-weight:600;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab .cnt{font-family:var(--mono-fallback);font-size:11.5px;font-weight:500;margin-left:6px;color:var(--text-dim);}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:18px 0 22px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);}
+  .stat .n{font-family:var(--mono-fallback);font-variant-numeric:tabular-nums;font-size:22px;font-weight:600;}
+  .stat .l{color:var(--text-dim);font-size:11.5px;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
+  .filter-btn{border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  .filter-btn.active{background:var(--accent-weak);border-color:var(--accent);color:var(--accent);font-weight:600;}
+  .spacer{flex:1;}
+  .add-btn{border:1px solid var(--accent);background:var(--accent);color:var(--surface);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .add-btn:hover{opacity:0.92;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+  .row{display:grid;grid-template-columns:1.3fr 0.55fr 0.85fr 1fr;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border);align-items:start;}
+  .row:last-child{border-bottom:none;}
+  @media (max-width:720px){.row{grid-template-columns:1fr;}}
+
+  .role{font-weight:600;font-size:14.5px;}
+  .company{color:var(--text-dim);font-size:12.5px;margin-top:1px;}
+  .meta-line{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .tag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--text-dim);white-space:nowrap;}
+  .link-line{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;}
+  .link-line a{color:var(--accent);font-size:12px;text-decoration:none;}
+  .link-line a:hover{text-decoration:underline;}
+  .label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);margin-bottom:3px;}
+  .fit-text,.angle-text{font-size:12.5px;color:var(--text);}
+  select.status-select{font-family:inherit;font-size:12.5px;font-weight:600;border-radius:999px;padding:5px 10px;border:1px solid transparent;cursor:pointer;appearance:none;-webkit-appearance:none;width:100%;max-width:150px;}
+  .date-added{font-size:11px;color:var(--text-dim);margin-top:8px;font-family:var(--mono-fallback);}
+  .notes{font-size:12px;color:var(--text-dim);margin-top:8px;font-style:italic;}
+  .mini-btn{border:none;background:none;color:var(--text-dim);font-family:inherit;font-size:11.5px;padding:0;margin-top:8px;cursor:pointer;text-decoration:underline;}
+  .mini-btn:hover{color:var(--accent);}
+
+  .empty{padding:48px 24px;text-align:center;color:var(--text-dim);}
+  .empty .big{font-size:15px;color:var(--text);margin-bottom:6px;font-weight:600;}
+
+  dialog{border:none;border-radius:14px;padding:0;background:var(--surface);color:var(--text);width:min(480px,92vw);box-shadow:0 12px 40px rgba(0,0,0,0.25);}
+  dialog::backdrop{background:rgba(20,18,14,0.4);}
+  .dform{padding:20px;}
+  .dform h2{margin:0 0 14px;font-size:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11.5px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;}
+  .field input,.field select,.field textarea{width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);}
+  .field textarea{resize:vertical;min-height:50px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .dform-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .btn-ghost{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;}
+  footer{margin-top:22px;color:var(--text-dim);font-size:11.5px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Job Search Tracker</h1>
+    <div class="sub" id="subText"></div>
+    <div class="demo-banner" id="demoBanner" hidden>Demo: sample data, all companies are fictional</div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="jobs">Job matches<span class="cnt" id="cntJobs">0</span></button>
+    <button class="tab" data-tab="companies">Companies I like<span class="cnt" id="cntCos">0</span></button>
+  </div>
+
+  <section id="jobsView">
+    <div class="stats" id="stats"></div>
+    <div class="toolbar" id="toolbar"></div>
+    <div class="card" id="list"></div>
+  </section>
+
+  <section id="cosView" hidden>
+    <div class="stats" id="coStats"></div>
+    <div class="toolbar" id="coToolbar"></div>
+    <div class="card" id="coList"></div>
+  </section>
+
+  <footer id="footerText">Data is stored with this page and updates for anyone who opens it.</footer>
+</div>
+
+<dialog id="dlg">
+  <form class="dform" method="dialog" id="addForm">
+    <h2>Add a match</h2>
+    <div class="two-col">
+      <div class="field"><label>Company</label><input name="company" required></div>
+      <div class="field"><label>Role</label><input name="role" required></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>Track</label>
+        <select name="track"><option>Analytics / BI</option><option>Data Strategy / Consulting</option><option>RevOps / GTM Ops</option><option>Product / Growth Ops</option><option>Other</option></select>
+      </div>
+      <div class="field"><label>Source</label>
+        <select name="source"><option>LinkedIn</option><option>Indeed</option><option>Company site</option><option>Referral</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>Location</label><input name="location" placeholder="Remote / NYC / Miami"></div>
+      <div class="field"><label>Comp (optional)</label><input name="comp" placeholder="e.g. $150-180k"></div>
+    </div>
+    <div class="field"><label>Link</label><input name="link" placeholder="https://"></div>
+    <div class="field"><label>Why it fits</label><textarea name="fit"></textarea></div>
+    <div class="field"><label>Positioning angle</label><textarea name="angle"></textarea></div>
+    <div class="field"><label>Notes</label><textarea name="notes"></textarea></div>
+    <div class="dform-actions">
+      <button type="button" class="btn-ghost" id="cancelAdd">Cancel</button>
+      <button type="submit" class="add-btn">Add match</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="coDlg">
+  <form class="dform" method="dialog" id="coForm">
+    <h2 id="coFormTitle">Add a company</h2>
+    <input type="hidden" name="id">
+    <div class="two-col">
+      <div class="field"><label>Company</label><input name="name" required></div>
+      <div class="field"><label>Space / sector</label><input name="sector" placeholder="e.g. BI / analytics software"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>Interest</label>
+        <select name="interest"><option>Top target</option><option>Strong interest</option><option>Watching</option></select>
+      </div>
+      <div class="field"><label>Stage</label><input name="stage" placeholder="e.g. Series C, public"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>Website</label><input name="website" placeholder="https://"></div>
+      <div class="field"><label>Careers page</label><input name="careers" placeholder="https://"></div>
+    </div>
+    <div class="field"><label>Why I like it</label><textarea name="why"></textarea></div>
+    <div class="field"><label>Roles to watch for</label><input name="roles" placeholder="e.g. Solutions Engineer, Strategy & Analytics"></div>
+    <div class="field"><label>Contacts</label><input name="contacts" placeholder="People I know or reached out to"></div>
+    <div class="field"><label>Notes</label><textarea name="notes"></textarea></div>
+    <div class="dform-actions">
+      <button type="button" class="btn-ghost" id="coCancel">Cancel</button>
+      <button type="submit" class="add-btn" id="coSubmit">Add company</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+  // Sample data shown when the page is opened outside Claude (e.g. locally from this repo).
+  // All companies, roles and links are fictional.
+  var SAMPLE_DOCS = [
+    {id:"s1",company:"Northwind Analytics",role:"Solutions Engineer",track:"Data Strategy / Consulting",source:"Company site",location:"Remote (US)",comp:"$160-190k",link:"https://example.com/jobs/1",
+     fit:"Client-facing role running discovery and demos for a BI platform. Uses data modeling knowledge to scope solutions without owning pipelines day to day.",
+     angle:"Lead with presenting a BI tool directly to a client's director and translating their questions into metric definitions.",
+     status:"New",dateFound:"2026-10-08"},
+    {id:"s2",company:"Lumen Data",role:"Deployment Strategist",track:"Data Strategy / Consulting",source:"Company site",location:"New York, NY (hybrid)",comp:"",link:"https://example.com/jobs/2",
+     fit:"Works with enterprise customers to deploy an AI product and define success metrics. Strategy and stakeholder work over hands-on building.",
+     angle:"Frame the semantic model work as turning fragmented client data into something decision makers trust.",
+     status:"Reviewing",dateFound:"2026-10-07"},
+    {id:"s3",company:"Brightpath AI",role:"Strategy & Analytics Lead",track:"Analytics / BI",source:"LinkedIn",location:"Remote (US)",comp:"$170-200k",link:"https://example.com/jobs/3",
+     fit:"Owns the metrics framework and works directly with leadership on planning. High-growth company in an area that is changing fast.",
+     angle:"Pair the analytics degree and teaching with past experience negotiating with retail chains to show business judgment.",
+     status:"Applied",dateFound:"2026-10-03",notes:"Applied with the strategy resume."},
+    {id:"s4",company:"Cobalt Commerce",role:"Senior Analyst, Growth Operations",track:"Product / Growth Ops",source:"Indeed",location:"New York, NY",comp:"$140-165k",link:"https://example.com/jobs/4",
+     fit:"Cross-functional role automating reporting for the growth team. Revenue-adjacent without carrying a quota.",
+     angle:"Point to automating weekly reporting for 100+ users and centralizing source systems into one model.",
+     status:"Interviewing",dateFound:"2026-09-29"},
+    {id:"s5",company:"Tessellate Labs",role:"Analytics Engineer",track:"Analytics / BI",source:"Company site",location:"Remote (US)",comp:"",link:"https://example.com/jobs/5",
+     fit:"Strong company, but the role is mostly building and maintaining dbt models as a solo IC.",
+     angle:"Skip unless a more strategy-facing opening comes up.",
+     status:"Passed",dateFound:"2026-09-26"}
+  ];
+  var SAMPLE_COS = [
+    {id:"c1",name:"Northwind Analytics",sector:"BI / analytics software",interest:"Top target",stage:"Series C",website:"https://example.com",careers:"https://example.com/careers",
+     why:"Product sits right where my experience is, and the solutions team is growing.",roles:"Solutions Engineer, Solutions Consultant",contacts:"Alumni contact on the sales team",addedAt:"2026-09-20"},
+    {id:"c2",name:"Lumen Data",sector:"Enterprise AI",interest:"Strong interest",stage:"Series B",website:"https://example.com",careers:"https://example.com/careers",
+     why:"Fast-growing, customer-facing deployment model.",roles:"Deployment Strategist",contacts:"",addedAt:"2026-09-22"},
+    {id:"c3",name:"Brightpath AI",sector:"AI for finance",interest:"Watching",stage:"Series A",website:"https://example.com",careers:"",
+     why:"Interesting mix of investing and AI.",roles:"Strategy & Analytics",contacts:"",addedAt:"2026-09-25"}
+  ];
+
+  var STATUSES = ["New","Reviewing","Applied","Interviewing","Offer","Rejected","Passed"];
+  var STATUS_COLORS = {
+    New:["--status-new","--status-new-bg"],Reviewing:["--status-reviewing","--status-reviewing-bg"],
+    Applied:["--status-applied","--status-applied-bg"],Interviewing:["--status-interviewing","--status-interviewing-bg"],
+    Offer:["--status-offer","--status-offer-bg"],Rejected:["--status-rejected","--status-rejected-bg"],
+    Passed:["--status-passed","--status-passed-bg"]
+  };
+  var INTERESTS = ["Top target","Strong interest","Watching"];
+  var INTEREST_COLORS = {
+    "Top target":["--status-interviewing","--status-interviewing-bg"],
+    "Strong interest":["--status-new","--status-new-bg"],
+    "Watching":["--status-passed","--status-passed-bg"]
+  };
+  var SUBS = {
+    jobs:"Matches found automatically each day plus anything you add yourself. Nothing here gets applied to on its own. Review the fit and positioning angle, then apply and update the status. Newest additions appear first.",
+    companies:"Companies that stand out, whether or not they have an opening right now. Keep them here to check their careers pages and watch for the right role over time."
+  };
+
+  var state = { docs: [], cos: [], filter: "All", coFilter: "All", tab: "jobs" };
+  var dbNs = null;
+
+  function esc(s){
+    return (s==null?"":String(s)).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function safeUrl(u){ u = String(u||"").trim(); return /^https?:\/\//i.test(u) ? u : ""; }
+  function fmtDate(iso){
+    if(!iso) return "";
+    try{ var d=new Date(iso+(iso.length===10?"T12:00:00":"")); if(isNaN(d.getTime())) return esc(iso);
+      return d.toLocaleDateString(undefined,{month:"short",day:"numeric"}); }catch(e){ return esc(iso); }
+  }
+  function sortKey(d){ return d.addedAt || d.dateFound || ""; }
+  function pill(vars){ return 'color:var('+vars[0]+');background:var('+vars[1]+');border-color:transparent;'; }
+
+  // ---------- Tabs ----------
+  function setTab(t){
+    state.tab = t;
+    try{ localStorage.setItem("trackerTab", t); }catch(e){}
+    document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-tab")===t); });
+    document.getElementById("jobsView").hidden = t!=="jobs";
+    document.getElementById("cosView").hidden = t!=="companies";
+    document.getElementById("subText").innerHTML = SUBS[t];
+  }
+  document.querySelectorAll(".tab").forEach(function(b){
+    b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); });
+  });
+  try{ var saved = localStorage.getItem("trackerTab"); if(saved==="companies"||saved==="jobs") state.tab = saved; }catch(e){}
+
+  // ---------- Jobs ----------
+  function render(){
+    var docs = state.docs.slice();
+    docs.sort(function(a,b){ var ka=sortKey(a),kb=sortKey(b); return ka<kb?1:ka>kb?-1:0; });
+    document.getElementById("cntJobs").textContent = docs.length;
+
+    var counts = {All: docs.length};
+    STATUSES.forEach(function(s){ counts[s]=0; });
+    docs.forEach(function(d){ if(counts[d.status]!=null) counts[d.status]++; else counts.New=(counts.New||0)+1; });
+
+    document.getElementById("stats").innerHTML = ["All","New","Reviewing","Applied","Interviewing","Offer"].map(function(s){
+      return '<div class="stat"><div class="n">'+(counts[s]||0)+'</div><div class="l">'+esc(s)+'</div></div>';
+    }).join("");
+
+    var toolbar = document.getElementById("toolbar");
+    toolbar.innerHTML = ["All"].concat(STATUSES).map(function(s){
+      return '<button class="filter-btn'+(state.filter===s?" active":"")+'" data-filter="'+esc(s)+'">'+esc(s)+' ('+(counts[s]||0)+')</button>';
+    }).join("") + '<div class="spacer"></div><button class="add-btn" id="openAdd">+ Add match</button>';
+    toolbar.querySelectorAll(".filter-btn").forEach(function(b){
+      b.addEventListener("click", function(){ state.filter=b.getAttribute("data-filter"); render(); });
+    });
+    document.getElementById("openAdd").addEventListener("click", function(){ document.getElementById("dlg").showModal(); });
+
+    var visible = state.filter==="All" ? docs : docs.filter(function(d){ return d.status===state.filter; });
+    var list = document.getElementById("list");
+    if(visible.length===0){
+      list.innerHTML = '<div class="empty"><div class="big">No matches yet</div>'+
+        (docs.length===0 ? 'Your first daily search run will populate this, or add one yourself with &ldquo;+ Add match&rdquo;.' : 'Nothing in this filter. Try a different status.')+'</div>';
+      return;
+    }
+    list.innerHTML = visible.map(function(d){
+      var colVars = STATUS_COLORS[d.status] || STATUS_COLORS.New;
+      var options = STATUSES.map(function(s){ return '<option value="'+esc(s)+'"'+(s===d.status?" selected":"")+'>'+esc(s)+'</option>'; }).join("");
+      var link = safeUrl(d.link);
+      return '<div class="row" data-id="'+esc(d.id)+'">' +
+        '<div><div class="role">'+esc(d.role||"Untitled role")+'</div><div class="company">'+esc(d.company||"Unknown company")+'</div>' +
+          '<div class="meta-line">'+
+            (d.track?'<span class="tag">'+esc(d.track)+'</span>':'')+(d.source?'<span class="tag">'+esc(d.source)+'</span>':'')+
+            (d.location?'<span class="tag">'+esc(d.location)+'</span>':'')+(d.comp?'<span class="tag">'+esc(d.comp)+'</span>':'')+
+          '</div>'+
+          (link?'<div class="link-line"><a href="'+esc(link)+'" target="_blank" rel="noopener">View posting &rarr;</a></div>':'')+
+        '</div>'+
+        '<div><select class="status-select" style="'+pill(colVars)+'">'+options+'</select>'+
+          '<div class="date-added">'+(d.dateFound?"found "+fmtDate(d.dateFound):"")+'</div></div>'+
+        '<div>'+(d.fit?'<div class="label">Why it fits</div><div class="fit-text">'+esc(d.fit)+'</div>':'')+'</div>'+
+        '<div>'+(d.angle?'<div class="label">Positioning angle</div><div class="angle-text">'+esc(d.angle)+'</div>':'')+
+          (d.notes?'<div class="notes">'+esc(d.notes)+'</div>':'')+'</div>'+
+      '</div>';
+    }).join("");
+
+    list.querySelectorAll(".status-select").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var id = sel.closest(".row").getAttribute("data-id");
+        var newStatus = sel.value;
+        sel.style.cssText = pill(STATUS_COLORS[newStatus]||STATUS_COLORS.New);
+        var d = state.docs.find(function(x){ return x.id===id; });
+        var prev = d ? d.status : "New";
+        if(d) d.status = newStatus;
+        if(dbNs && id){
+          dbNs.collection("applications").doc(id).update({status:newStatus}).catch(function(err){
+            console.log("status update failed", err && err.code);
+            if(d) d.status = prev;
+            render();
+          });
+        } else { render(); }
+      });
+    });
+  }
+
+  document.getElementById("cancelAdd").addEventListener("click", function(){ document.getElementById("dlg").close(); });
+  document.getElementById("addForm").addEventListener("submit", function(ev){
+    var fd = new FormData(ev.target), now = new Date().toISOString();
+    var entry = {
+      company:fd.get("company")||"", role:fd.get("role")||"", track:fd.get("track")||"", source:fd.get("source")||"",
+      location:fd.get("location")||"", comp:fd.get("comp")||"", link:fd.get("link")||"", fit:fd.get("fit")||"",
+      angle:fd.get("angle")||"", notes:fd.get("notes")||"", status:"New", dateFound:now.slice(0,10), addedAt:now, addedBy:"me"
+    };
+    ev.target.reset();
+    if(dbNs){ dbNs.collection("applications").add(entry).catch(function(err){ console.log("add failed", err && err.code); }); }
+    else { entry.id="local-"+Date.now(); state.docs.push(entry); render(); }
+  });
+
+  // ---------- Companies ----------
+  function coRank(i){ var r = INTERESTS.indexOf(i); return r<0 ? 9 : r; }
+
+  function renderCos(){
+    var cos = state.cos.slice();
+    cos.sort(function(a,b){
+      var r = coRank(a.interest)-coRank(b.interest); if(r) return r;
+      return String(a.name||"").localeCompare(String(b.name||""));
+    });
+    document.getElementById("cntCos").textContent = cos.length;
+
+    var counts = {All: cos.length};
+    INTERESTS.forEach(function(s){ counts[s]=0; });
+    cos.forEach(function(c){ if(counts[c.interest]!=null) counts[c.interest]++; });
+
+    document.getElementById("coStats").innerHTML = ["All"].concat(INTERESTS).map(function(s){
+      return '<div class="stat"><div class="n">'+(counts[s]||0)+'</div><div class="l">'+esc(s==="All"?"Companies":s)+'</div></div>';
+    }).join("");
+
+    var tb = document.getElementById("coToolbar");
+    tb.innerHTML = ["All"].concat(INTERESTS).map(function(s){
+      return '<button class="filter-btn'+(state.coFilter===s?" active":"")+'" data-f="'+esc(s)+'">'+esc(s)+' ('+(counts[s]||0)+')</button>';
+    }).join("") + '<div class="spacer"></div><button class="add-btn" id="openCo">+ Add company</button>';
+    tb.querySelectorAll(".filter-btn").forEach(function(b){
+      b.addEventListener("click", function(){ state.coFilter=b.getAttribute("data-f"); renderCos(); });
+    });
+    document.getElementById("openCo").addEventListener("click", function(){ openCoForm(null); });
+
+    var visible = state.coFilter==="All" ? cos : cos.filter(function(c){ return c.interest===state.coFilter; });
+    var list = document.getElementById("coList");
+    if(visible.length===0){
+      list.innerHTML = '<div class="empty"><div class="big">No companies here yet</div>'+
+        (cos.length===0 ? 'Add the ones that stand out with &ldquo;+ Add company&rdquo;.' : 'Nothing in this filter.')+'</div>';
+      return;
+    }
+    list.innerHTML = visible.map(function(c){
+      var opts = INTERESTS.map(function(s){ return '<option'+(s===c.interest?" selected":"")+'>'+esc(s)+'</option>'; }).join("");
+      var web = safeUrl(c.website), car = safeUrl(c.careers);
+      var jobCount = state.docs.filter(function(d){ return String(d.company||"").toLowerCase().indexOf(String(c.name||"").toLowerCase())===0 && c.name; }).length;
+      return '<div class="row" data-id="'+esc(c.id)+'">'+
+        '<div><div class="role">'+esc(c.name||"Unnamed")+'</div>'+
+          (c.sector?'<div class="company">'+esc(c.sector)+'</div>':'')+
+          '<div class="meta-line">'+(c.stage?'<span class="tag">'+esc(c.stage)+'</span>':'')+
+            (jobCount?'<span class="tag">'+jobCount+' in job matches</span>':'')+'</div>'+
+          ((web||car)?'<div class="link-line">'+(car?'<a href="'+esc(car)+'" target="_blank" rel="noopener">Careers &rarr;</a>':'')+
+            (web?'<a href="'+esc(web)+'" target="_blank" rel="noopener">Website</a>':'')+'</div>':'')+
+        '</div>'+
+        '<div><select class="status-select co-interest" style="'+pill(INTEREST_COLORS[c.interest]||INTEREST_COLORS.Watching)+'">'+opts+'</select>'+
+          '<div class="date-added">'+(c.addedAt?"added "+fmtDate(c.addedAt):"")+'</div>'+
+          '<button class="mini-btn co-edit">Edit</button></div>'+
+        '<div>'+(c.why?'<div class="label">Why I like it</div><div class="fit-text">'+esc(c.why)+'</div>':'')+'</div>'+
+        '<div>'+(c.roles?'<div class="label">Roles to watch for</div><div class="angle-text">'+esc(c.roles)+'</div>':'')+
+          (c.contacts?'<div class="label" style="margin-top:8px">Contacts</div><div class="angle-text">'+esc(c.contacts)+'</div>':'')+
+          (c.notes?'<div class="notes">'+esc(c.notes)+'</div>':'')+'</div>'+
+      '</div>';
+    }).join("");
+
+    list.querySelectorAll(".co-interest").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var id = sel.closest(".row").getAttribute("data-id");
+        var c = state.cos.find(function(x){ return x.id===id; });
+        var prev = c ? c.interest : "";
+        if(c) c.interest = sel.value;
+        sel.style.cssText = pill(INTEREST_COLORS[sel.value]);
+        if(dbNs && id) dbNs.collection("companies").doc(id).update({interest:sel.value}).catch(function(err){
+          console.log("interest update failed", err && err.code); if(c) c.interest = prev; renderCos();
+        });
+        else renderCos();
+      });
+    });
+    list.querySelectorAll(".co-edit").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = b.closest(".row").getAttribute("data-id");
+        openCoForm(state.cos.find(function(x){ return x.id===id; }));
+      });
+    });
+  }
+
+  var CO_FIELDS = ["name","sector","interest","stage","website","careers","why","roles","contacts","notes"];
+  function openCoForm(c){
+    var f = document.getElementById("coForm");
+    f.reset();
+    f.elements.id.value = c ? c.id : "";
+    CO_FIELDS.forEach(function(k){ if(c && c[k]!=null) f.elements[k].value = c[k]; });
+    document.getElementById("coFormTitle").textContent = c ? "Edit company" : "Add a company";
+    document.getElementById("coSubmit").textContent = c ? "Save changes" : "Add company";
+    document.getElementById("coDlg").showModal();
+  }
+  document.getElementById("coCancel").addEventListener("click", function(){ document.getElementById("coDlg").close(); });
+  document.getElementById("coForm").addEventListener("submit", function(ev){
+    var f = ev.target, id = f.elements.id.value, data = {};
+    CO_FIELDS.forEach(function(k){ data[k] = (f.elements[k].value||"").trim(); });
+    if(!id) data.addedAt = new Date().toISOString();
+    if(dbNs){
+      var p = id ? dbNs.collection("companies").doc(id).update(data) : dbNs.collection("companies").add(data);
+      p.catch(function(err){ console.log("company save failed", err && err.code); });
+    } else {
+      if(id){ var c = state.cos.find(function(x){ return x.id===id; }); if(c) Object.assign(c, data); }
+      else { data.id = "local-"+Date.now(); state.cos.push(data); }
+      renderCos();
+    }
+  });
+
+  // Inside Claude the page reads live data from its database.
+  // Opened anywhere else, it falls back to the sample data above.
+  if(window.claude && window.claude.use){
+    window.claude.use("db").then(function(db){
+      if(!db) return;
+      dbNs = db;
+      db.collection("applications").limit(500).onSnapshot(function(snap){
+        state.docs = snap.docs.map(function(doc){ return Object.assign({}, doc.data()||{}, {id: doc.id}); });
+        render(); renderCos();
+      }, function(err){ console.log("subscribe error", err && err.code); });
+      db.collection("companies").limit(500).onSnapshot(function(snap){
+        state.cos = snap.docs.map(function(doc){ return Object.assign({}, doc.data()||{}, {id: doc.id}); });
+        renderCos();
+      }, function(err){ console.log("companies subscribe error", err && err.code); });
+    }).catch(function(){});
+  } else {
+    state.docs = SAMPLE_DOCS.map(function(d){ return Object.assign({}, d); });
+    state.cos = SAMPLE_COS.map(function(c){ return Object.assign({}, c); });
+    document.getElementById("demoBanner").hidden = false;
+    document.getElementById("footerText").textContent = "Demo version. In the live version, rows come from the agent and are stored with the page.";
+  }
+
+  setTab(state.tab);
+  render();
+  renderCos();
+})();
+</script>
+
+</body>
+</html>
