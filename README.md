@@ -2,7 +2,7 @@
 
 An AI agent that runs every morning, finds job postings that match what I'm looking for, and logs them to a tracker with a short note on why each one fits. It finds and drafts. I decide and apply.
 
-![Job search tracker dashboard with sample data](images/tracker.png)
+   ![Job search tracker dashboard with sample data](job-search-agent/images/tracker.png)
 
 *The tracker dashboard, shown here with fictional sample data. Open `tracker.html` in a browser to try the demo.*
 
